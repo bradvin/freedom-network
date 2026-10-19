@@ -33,16 +33,6 @@ pub const AGENT_NAME: &str = "reason-network";
 /// `paths` moves the state it kept under it.
 pub const LEGACY_NAME: &str = "tincan";
 
-/// Whether the Reason CLI installed this binary (in `~/.reason/bin`): then it sets up and updates with the CLI, and
-/// people type `reason network`.
-pub fn managed() -> bool {
-    static MANAGED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *MANAGED.get_or_init(|| {
-        let real = |p: std::path::PathBuf| p.canonicalize().unwrap_or(p);
-        util::current_exe().is_ok_and(|p| real(p).starts_with(real(paths::user_home().join(".reason").join("bin"))))
-    })
-}
-
 /// The local fork command, never a handoff to the upstream Reason CLI.
 pub struct Command;
 pub const CLI: Command = Command;
@@ -52,16 +42,12 @@ impl std::fmt::Display for Command {
     }
 }
 
-/// The engine as a command agents can run here: its full path where the Reason CLI manages it (whose `reason network`
-/// doesn't take every engine command and flag), `reason-network` on its own.
+/// The local engine command, independent of its installation directory or the Reason CLI.
 pub struct Engine;
 pub const ENGINE: Engine = Engine;
 impl std::fmt::Display for Engine {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match setup::exe() {
-            Ok(p) if managed() => f.write_str(setup::shell_cmd(&p, "").trim_end()),
-            _ => f.write_str(AGENT_NAME),
-        }
+        f.write_str(AGENT_NAME)
     }
 }
 
@@ -487,13 +473,6 @@ async fn cli(cmd: Cmd) -> Result<()> {
             println!("On Windows, in PowerShell:\n\n  {windows}\n");
             println!("Works once, within {}h, while this machine is online.", i.hours);
             println!("If this machine will be offline, use the long form instead: {AGENT_NAME} join {}", i.ticket);
-            if me {
-                println!(
-                    "\nFor a cloud agent of yours (Grok Bot, Dots, Muse, …), send it: join my Reason Network team as {}: {}",
-                    default_person(None),
-                    join_url(&i.ticket)
-                );
-            }
         }
         Cmd::Listen { name, wait } => {
             let id = util::slug(&name);

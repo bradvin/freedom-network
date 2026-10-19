@@ -40,8 +40,10 @@ delivery does not prove execution or completion. Do not change installed agent c
 
 The inherited code connects local agent sessions through per-machine daemons and iroh peer transport, with directory,
 messaging, notifications and local agent integrations. [DESIGN.md](DESIGN.md) describes that inherited design, not verified
-fork acceptance. Managed-directory detection and Reason cloud/workspace bridges remain for later work; no account-free
-or cloud-independent runtime acceptance is established by this distribution-safety change.
+fork acceptance. P2 removes Reason cloud/workspace CLI bridges, ignores legacy `reason = true` with a diagnostic,
+and removes managed-directory coupling. Isolated processes cover local sessions/messaging and raw-ticket admission
+with external networking denied. This is not peer-messaging-after-restart or cross-machine acceptance;
+see [REASON_INDEPENDENCE.md](REASON_INDEPENDENCE.md) for the inventory and evidence boundaries.
 
 Default connectivity still uses n0 services. Custom relay support exists in the source, but no no-n0/cross-machine
 runtime claim is made here. LAN/offline, independent relay, Windows/WSL and real Codex/Claude/Hermes acceptance are separate
@@ -58,6 +60,7 @@ cargo clippy --all-targets --locked -- -D warnings
 cargo test --locked
 cargo build --locked
 python3 tests/distribution_safety.py --binary target/debug/reason-network
+python3 tests/reason_independence.py --binary target/debug/reason-network  # macOS sandbox-exec
 ```
 
 The distribution fixture harness never downloads or installs application binaries. A separately available PowerShell

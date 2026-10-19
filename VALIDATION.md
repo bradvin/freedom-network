@@ -2,6 +2,11 @@
 
 Independent-network and real-worker runtime acceptance is pending. P1's local distribution unit/process checks are separate; reproducible commands and boundaries are in [DISTRIBUTION.md](DISTRIBUTION.md). Record exact revision, test class, environment, expected/observed result and redacted evidence per PR. Use pass/fail/blocked/not-run, never infer a pass from static inspection. No machines, sessions, credentials or relay availability are assumed.
 
+P2's narrower local evidence is in [REASON_INDEPENDENCE.md](REASON_INDEPENDENCE.md): Reason-CLI traps, local session
+messaging and two-daemon raw-ticket admission pass under macOS outbound denial. Peer messaging after daemon restart
+does not pass with external discovery and mDNS denied. The optional `--transport` attempt records that failure;
+the default suite explicitly skips it. This does not check off the broader Reason-absent/denied acceptance item below.
+
 ## D0 documentation checks
 
 - [ ] Diff contains only README and planned scope documents; no source, license, workflow or settings changes.

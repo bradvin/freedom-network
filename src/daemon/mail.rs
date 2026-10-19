@@ -27,7 +27,7 @@ const IN_FLIGHT_TTL: Duration = Duration::from_secs(90);
 enum Channel {
     /// Its `reason network mcp` posts into Claude Code's session socket.
     ClaudeSocket(u64),
-    /// The agent's own CLI: `codex queue --thread <id> --message`, `reason session send <id> --message`.
+    /// The local agent's own CLI: `codex queue --thread <id> --message`.
     Command(&'static str, Vec<String>),
     /// Straight into a Claude Code session's messaging socket (one without Reason Network's tools: it replies with the CLI).
     ClaudeDirect(agent::ClaudeSocket),
@@ -246,18 +246,12 @@ impl Daemon {
         if g.polling.get(key).is_some_and(|n| *n > 0) {
             return ("delivered".into(), "delivered: the session was waiting for messages".into());
         }
-        // Reason didn't take the last push: wait out its backoff (its sync pushes again when it allows).
-        if l.reg.agent == "reason" && l.retry.is_some_and(|(at, _)| Instant::now() < at) {
-            return ("queued".into(), "queued: Reason didn't take the last delivery; it is retried shortly".into());
-        }
+
         let has = |bin: &str| !l.push_failed && agent::find_bin(bin).is_some();
         let channel = match (l.reg.tier, l.conn, &l.reg.agent_session_id) {
             (Tier::Push, Some(conn), _) if l.reg.agent == agent::CLAUDE_CODE => Channel::ClaudeSocket(conn),
             (Tier::Push, _, Some(id)) if l.reg.agent == "codex" && has("codex") => {
                 Channel::Command("codex", vec!["queue".into(), "--thread".into(), id.clone(), "--message".into()])
-            }
-            (Tier::Push, _, Some(id)) if l.reg.agent == "reason" && has("reason") => {
-                Channel::Command("reason", vec!["session".into(), "send".into(), id.clone(), "--message".into()])
             }
             (Tier::Push, None, id) if l.reg.agent == agent::CLAUDE_CODE && !l.push_failed => {
                 match claude::socket_for(id.as_deref(), l.reg.pid) {
@@ -388,20 +382,6 @@ impl Daemon {
             match res {
                 Ok(()) => {
                     let _ = g.store.mark_read(&ids, util::now_ms());
-                    if let Some(l) = g.live.get_mut(&key) {
-                        l.retry = None;
-                    }
-                }
-                // Reason has no hooks to fall back on: its sync pushes again, backing off (15 s doubling to 30 min).
-                Err(why) if bin == "reason" => {
-                    if let Some(l) = g.live.get_mut(&key) {
-                        if l.retry.is_none() {
-                            log(&format!("{bin} delivery to {key} failed ({why}); retrying with backoff"));
-                        }
-                        let wait =
-                            l.retry.map_or(Duration::from_secs(15), |(_, w)| (w * 2).min(Duration::from_secs(1800)));
-                        l.retry = Some((Instant::now() + wait, wait));
-                    }
                 }
                 Err(why) => {
                     log(&format!("{bin} delivery to {key} failed ({why}); falling back to hooks"));

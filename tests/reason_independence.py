@@ -168,13 +168,17 @@ class ReasonIndependence(unittest.TestCase):
         self.trap_reason()
         state = self.state("a")
         _, rpc = self.start(state)
-        self.register(rpc, "control")
+        self.register(rpc, "sender")
+        self.register(rpc, "receiver")
+        rpc.call("send", **{"from": "fixture:sender", "to": "fixture/receiver", "body": "trap-present fixture"})
+        self.assertIn("trap-present fixture", json.dumps(rpc.call("inbox", key="fixture:receiver")))
         time.sleep(1)
         self.assert_no_reason()
         self.assertIn("Reason cloud integration is disabled", (state / "process.log").read_text())
 
     def test_managed_directory_cannot_spawn_workspace_relay(self):
         self.trap_reason()
+        self.env.update(REASON_BIN=str(self.tools / "reason"), REASON_NETWORK_REASON_BIN=str(self.tools / "reason"))
         managed = self.root / ".reason" / "bin" / BINARY.name
         managed.parent.mkdir(parents=True)
         shutil.copy2(BINARY, managed)
@@ -205,27 +209,39 @@ class ReasonIndependence(unittest.TestCase):
         self.assertNotIn("lists your live Reason sessions", result.stdout + result.stderr)
         self.assert_no_reason()
 
-    @unittest.skipUnless(ARGS.transport, "pass --transport to attempt loopback-only QUIC process coverage")
-    def test_standalone_raw_ticket_admission_and_peer_messaging(self):
+    def form_team(self, present):
+        if present:
+            self.trap_reason()
+        a = self.state("c" if present else "a")
+        b = self.state("d" if present else "b")
+        pa, ra = self.start(a)
+        created = ra.call("create_team", name="fixture-team", person="alice", relay=None)
+        self.assertEqual(created["name"], "fixture-team")
+        pa.wait(timeout=10)
+        _, ra = self.start(a)
+        ticket = ra.call("link", new=False)["url"]
+        self.assertTrue(ticket.startswith("tincan1"), ticket)
+        self.assertNotIn("://", ticket)
+        pb, rb = self.start(b)
+        joined = rb.call("join", ticket=ticket, person="bob")
+        self.assertEqual(joined["name"], "fixture-team")
+        pb.wait(timeout=10)
+        _, rb = self.start(b)
+        self.assertEqual(rb.call("team")["name"], "fixture-team")
+        self.assert_no_reason()
+        return ra, rb
+
+    def test_standalone_raw_ticket_admission_without_reason(self):
         for present in (False, True):
             with self.subTest(reason_present=present):
-                if present:
-                    self.trap_reason()
-                a = self.state("c" if present else "a")
-                b = self.state("d" if present else "b")
-                pa, ra = self.start(a)
-                created = ra.call("create_team", name="fixture-team", person="alice", relay=None)
-                self.assertEqual(created["name"], "fixture-team")
-                pa.wait(timeout=10)
-                _, ra = self.start(a)
-                ticket = ra.call("link", new=False)["url"]
-                self.assertTrue(ticket.startswith("tincan1"), ticket)
-                self.assertNotIn("://", ticket)
-                pb, rb = self.start(b)
-                joined = rb.call("join", ticket=ticket, person="bob")
-                self.assertEqual(joined["name"], "fixture-team")
-                pb.wait(timeout=10)
-                _, rb = self.start(b)
+                self.form_team(present)
+                self.assert_no_reason()
+
+    @unittest.skipUnless(ARGS.transport, "pass --transport to attempt loopback-only QUIC process coverage")
+    def test_peer_messaging_after_admission_and_restart(self):
+        for present in (False, True):
+            with self.subTest(reason_present=present):
+                ra, rb = self.form_team(present)
                 self.register(ra, "sender")
                 self.register(rb, "receiver")
                 deadline = time.monotonic() + 15
@@ -236,7 +252,7 @@ class ReasonIndependence(unittest.TestCase):
                         break
                     time.sleep(0.1)
                 else:
-                    self.fail("peer session not announced: " + json.dumps(peers))
+                    self.fail("peer session not announced: " + json.dumps(peers) + "; team=" + json.dumps(ra.call("team")))
                 ra.call("send", **{"from": "fixture:sender", "to": "bob/receiver", "body": "ordinary peer fixture"})
                 deadline = time.monotonic() + 10
                 while time.monotonic() < deadline:

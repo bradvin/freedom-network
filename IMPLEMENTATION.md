@@ -16,6 +16,10 @@ All phases are unchecked. Each row is one focused PR; split further if review si
 
 ## Per-PR review gate
 
+P2 implementation/evidence status is recorded in [REASON_INDEPENDENCE.md](REASON_INDEPENDENCE.md). Local checks do not
+check off the full phase: denied-external peer messaging after restart, real machines/workers and P3 connectivity
+acceptance remain explicit gaps.
+
 Use regression-first tests and the actual repository gates: `cargo fmt --check`, `cargo clippy --all-targets --locked -- -D warnings`, `cargo test --locked`. Run focused process/e2e tests only after checking side effects and obtaining required environment authorization. Inspect the exact outgoing diff, public data and author/committer identity; obtain bounded independent read-only review of that exact candidate before publication. Fix material findings and record evidence. Do not enable issues as a prerequisite or assume unavailable Actions permissions mean workflows are disabled.
 
 Public PRs should carry the relevant acceptance items and honest check results. Keep machine-specific logs and private operational details outside this public repository. No merge or production effect is implied by PR publication.

@@ -6,7 +6,6 @@ mod ask;
 mod directory;
 mod mail;
 mod notify;
-mod reason;
 mod sessions;
 mod teamops;
 mod update;
@@ -65,10 +64,7 @@ pub async fn run(service: bool) -> Result<()> {
         tokio::spawn(tray());
     }
     if daemon.cfg.reason {
-        tokio::spawn(daemon.clone().reason_loop());
-    }
-    if crate::managed() {
-        tokio::spawn(daemon.clone().relay_loop());
+        log("Reason cloud integration is disabled in this fork; legacy reason = true is ignored");
     }
     tokio::spawn(crate::migrate::run(log));
     if let Err(e) = update::configure(daemon.cfg.auto_update) {
@@ -147,8 +143,6 @@ struct Live {
     push_failed: bool,
     /// The agent's transcript (from its hooks), which says what the session is doing.
     transcript: Option<std::path::PathBuf>,
-    /// A push that failed is retried from this time on, after waiting this long (doubling up to 30 min).
-    retry: Option<(Instant, Duration)>,
     /// Bumped to end this session's `check_inbox` wait (its client gave up on it).
     stop_gen: u64,
 }

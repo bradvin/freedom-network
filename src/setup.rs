@@ -6,7 +6,7 @@
 //! there under that name, so an update moves an agent over and leaves nothing behind; another program of that name
 //! (at another path) keeps its wiring.
 
-use crate::{AGENT_NAME, CLI, LEGACY_NAME, agent, client::Link, config::Config, paths, proto::*, render};
+use crate::{AGENT_NAME, CLI, LEGACY_NAME, agent, client::Link, paths, proto::*, render};
 use anyhow::{Context, Result, anyhow};
 use serde_json::{Map, Value, json};
 use std::{
@@ -811,28 +811,6 @@ fn dsh(exe: &Path, remove: bool, dry: bool) -> Result<Option<Report>> {
     Ok(Some(r))
 }
 
-// ---- Reason ----
-
-/// Reason's agent runs in its cloud: nothing to install there. The daemon lists your live Reason sessions and
-/// delivers with `reason session send`; they reply with the reason CLI.
-fn reason(_exe: &Path, remove: bool, dry: bool) -> Result<Option<Report>> {
-    if agent::find_bin("reason").is_none() {
-        return Ok(None);
-    }
-    let mut r = Report { agent: "Reason", lines: Vec::new(), notes: Vec::new() };
-    let mut cfg = Config::load_strict()?;
-    if cfg.reason != remove {
-        r.lines.push("already set".into());
-    } else {
-        if !dry {
-            cfg.reason = !remove;
-            cfg.save()?;
-        }
-        r.lines.push(if remove { "stopped listing Reason sessions" } else { "lists your live Reason sessions" }.into());
-    }
-    Ok(Some(r))
-}
-
 // ---- background service ----
 
 #[cfg(unix)]
@@ -958,8 +936,6 @@ async fn install_service(exe: &Path, remove: bool, dry: bool, stop: bool) -> Res
     let path = service_path();
     let uid = unsafe { libc::getuid() };
     let engine_home = crate::paths::env_var("HOME").ok();
-    // The Reason CLI that set this up, so the daemon runs that one's relay rather than whatever `reason` is on its PATH.
-    let reason_bin = crate::paths::env_var("REASON_BIN").ok().filter(|b| !b.is_empty() && crate::managed());
     let legacy = stop && remove_legacy_service(exe, dry);
     if cfg!(target_os = "macos") {
         let target = format!("gui/{uid}/{}", service_name());
@@ -973,10 +949,7 @@ async fn install_service(exe: &Path, remove: bool, dry: bool, stop: bool) -> Res
         }
         let home_env = engine_home
             .map(|h| format!("\n    <key>REASON_NETWORK_HOME</key><string>{}</string>", xml(&h)))
-            .unwrap_or_default()
-            + &reason_bin
-                .map(|b| format!("\n    <key>REASON_NETWORK_REASON_BIN</key><string>{}</string>", xml(&b)))
-                .unwrap_or_default();
+            .unwrap_or_default();
         let plist = format!(
             r#"<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1048,10 +1021,7 @@ async fn install_service(exe: &Path, remove: bool, dry: bool, stop: bool) -> Res
         // systemd expands `%` specifiers and reads `\` and `"` as escapes inside a quoted value.
         let value = |v: &str| v.replace('%', "%%").replace('\\', "\\\\").replace('"', "\\\"");
         let home_env =
-            engine_home.map(|h| format!("Environment=\"REASON_NETWORK_HOME={}\"\n", value(&h))).unwrap_or_default()
-                + &reason_bin
-                    .map(|b| format!("Environment=\"REASON_NETWORK_REASON_BIN={}\"\n", value(&b)))
-                    .unwrap_or_default();
+            engine_home.map(|h| format!("Environment=\"REASON_NETWORK_HOME={}\"\n", value(&h))).unwrap_or_default();
         let unit = format!(
             "[Unit]\nDescription=Reason Network daemon\n\n[Service]\nExecStart={} daemon --service\nRestart=always\nRestartSec=3\nEnvironment=\"PATH={}\"\n{home_env}StandardError=append:{}\n\n[Install]\nWantedBy=default.target\n",
             shell_cmd(exe, "").trim_end().replace('%', "%%"),
@@ -1202,7 +1172,7 @@ fn me(exe: &Path) -> String {
     s[1..s.len() - 1].to_string()
 }
 
-const AGENTS: [Agent; 10] = [
+const AGENTS: [Agent; 9] = [
     Agent {
         id: "claude",
         name: "Claude Code",
@@ -1290,14 +1260,6 @@ const AGENTS: [Agent; 10] = [
         wired: |exe| std::fs::read_to_string(dsh_patch()).is_ok_and(|t| dsh_wired(&t, exe)),
         apply: dsh,
     },
-    Agent {
-        id: "reason",
-        name: "Reason",
-        hint: "messages arrive after its current turn",
-        installed: || agent::find_bin("reason").is_some(),
-        wired: |_| Config::load().reason,
-        apply: reason,
-    },
 ];
 
 /// The agents wired to the tincan binary beside `exe`, which move over to it.
@@ -1316,8 +1278,6 @@ pub fn legacy_wiring(exe: &Path) -> Vec<&'static str> {
         "pi" => {
             std::fs::read_to_string(pi_home().join(format!("extensions/{LEGACY_NAME}.ts"))).is_ok_and(|t| ours(&t, exe))
         }
-        // Its setting moved over with the state; nothing of it names the tincan binary.
-        "reason" => false,
         _ => (a.wired)(&old),
     };
     AGENTS.iter().filter(|a| (a.installed)() && wired(a)).map(|a| a.id).collect()

@@ -15,6 +15,9 @@ This is the Freedom Network fork. Scripted installation and binary self-upgrade 
 already available reviewed source build; never fetch an upstream installer or delegate to the Reason CLI.
 Join with `reason-network join '<ticket>' --as <name>` only with your user's authorization. See
 `DISTRIBUTION.md` in `bradvin/freedom-network` for the source-only policy. Message receipt is not task completion.
+Reason cloud sessions and workspace relay integration are unsupported. A legacy `reason = true` setting is
+ignored with a diagnostic, and installing this binary under `.reason/bin` does not enable an upstream CLI bridge.
+Old hosted join URLs are compatibility data only: the local binary extracts the ticket without fetching the page.
 
 - `reason-network who`: every person, machine and session, with what each is working on.
 - `reason-network send <to> "<message>"`: `<to>` is one agent session, `person/session`. Run `listen --as <name>`

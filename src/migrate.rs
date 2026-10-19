@@ -37,9 +37,7 @@ pub async fn run(log: fn(&str)) {
     // Only tincan's last update leaves this: a copy of this very binary under the old name. Anything else called tincan
     // (a tincan of its own, a script) isn't ours to move. Once moved, it's a link to us, or gone.
     let copy = waiting(&exe);
-    // Where the Reason CLI's engine is installed too, it owns the agents and the service.
-    let reason_cli = paths::user_home().join(".reason").join("bin").join(exe.file_name().unwrap_or_default()).exists();
-    if util::from_source() || crate::managed() || reason_cli || !copy {
+    if util::from_source() || !copy {
         return;
     }
     let out = setup::apply(&exe, &setup::legacy_wiring(&exe), &[], None, false).await;

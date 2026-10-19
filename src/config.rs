@@ -16,7 +16,7 @@ pub struct Config {
     pub lan: bool,
     /// Show the menu bar icon (macOS, while the background service runs).
     pub tray: bool,
-    /// List your live Reason sessions and deliver to them (`reason session list`/`send`).
+    /// Legacy compatibility data only. Reason cloud integration is unsupported even when true.
     pub reason: bool,
     /// Legacy setting, retained for config compatibility. Self-updating is disabled even when true.
     pub auto_update: bool,
@@ -116,5 +116,12 @@ mod distribution_tests {
         assert!(!Config::default().auto_update);
         assert!(!toml::from_str::<Config>("").unwrap().auto_update);
         assert!(!toml::from_str::<Config>("person = 'fixture'").unwrap().auto_update);
+    }
+
+    #[test]
+    fn legacy_reason_flag_remains_parseable_but_defaults_off() {
+        assert!(!Config::default().reason);
+        assert!(!toml::from_str::<Config>("").unwrap().reason);
+        assert!(toml::from_str::<Config>("reason = true").unwrap().reason);
     }
 }

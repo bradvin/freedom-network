@@ -59,8 +59,6 @@ pub fn from_client_name(name: &str) -> Option<&'static str> {
     } else if n == "dsh" || n.starts_with("dsh-") {
         // DeepSeek Harness: its MCP client says `dsh-mcp-client`.
         "dsh"
-    } else if has("reason") {
-        "reason"
     } else if n == "amp" || n.starts_with("amp-") || n.starts_with("amp ") {
         "amp"
     } else if has("zed") {
@@ -172,7 +170,6 @@ pub fn label(agent: &str) -> &str {
     match agent {
         "codex" => "Codex",
         "grok" => "Grok",
-        "reason" => "Reason",
         a => a,
     }
 }
@@ -257,6 +254,8 @@ mod tests {
         assert_eq!(from_client_name("ashdsh"), None);
         assert_eq!(from_client_name("claude-ai"), Some("claude-desktop"));
         assert_eq!(from_client_name("example-client"), None);
+        assert_eq!(from_client_name("reason"), None);
+        assert_eq!(from_client_name("reason-cloud-client"), None);
     }
 
     #[test]
