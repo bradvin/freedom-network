@@ -51,4 +51,4 @@ Reason cloud/workspace bridges, managed-directory detection, default n0 transpor
 - `python3 tests/distribution_safety.py --binary target/debug/reason-network`
 - With a separately available PowerShell runtime: append `--powershell /path/to/pwsh` to exercise the PowerShell refusal. macOS PowerShell is not native Windows acceptance.
 
-The fixture harness substitutes local executables and temporary state. It never downloads or installs an application binary. Skipped checks are printed explicitly and are not passes. Real agent/cross-machine/OS acceptance remains governed by [VALIDATION.md](VALIDATION.md).
+The fixture harness substitutes local executables and temporary state. It never downloads or installs an application binary. PATH interception is not a general network sandbox: the reviewed candidate has no native download path, and the isolated no-team daemon does not start transport. For stronger execution isolation, run the harness under an OS-level outbound-network denial where available. Skipped checks are printed explicitly and are not passes. Real agent/cross-machine/OS acceptance remains governed by [VALIDATION.md](VALIDATION.md).
