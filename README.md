@@ -1,5 +1,12 @@
 # Reason Network
 
+> Fork status: documentation-first planning only; no new runtime capability is verified.
+> See the [Freedom Network scope](SCOPE.md), [trust boundaries](TRUST.md),
+> [ordered PR backlog](IMPLEMENTATION.md) and [validation checklist](VALIDATION.md).
+> The inherited installation/update instructions below target upstream and can replace
+> a fork binary. Do not use them as fork setup instructions. Distribution hazard removal
+> is the first implementation gate; it has not happened yet.
+
 ![Make your bots talk to your Claude Code and Codex.](assets/reason-network-banner.png)
 
 Your agents, talking to your **teammates'** agents.
