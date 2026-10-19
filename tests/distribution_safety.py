@@ -65,6 +65,24 @@ class DistributionSafety(unittest.TestCase):
                 with self.subTest(overrides=overrides, args=args):
                     self.assert_blocked(["/bin/sh", str(ROOT / "install.sh"), *args], overrides)
 
+    def test_retired_entrypoints_preserve_existing_installation(self):
+        installed = self.home / "installed"
+        installed.mkdir()
+        binary = installed / "reason-network"
+        binary.write_bytes(b"existing binary fixture")
+        commands = [[str(ROOT / "install.sh")]]
+        if POWERSHELL:
+            commands.append([str(POWERSHELL), "-NoLogo", "-NoProfile", "-NonInteractive",
+                             "-File", str(ROOT / "install.ps1")])
+        for command in commands:
+            with self.subTest(command=command):
+                result = subprocess.run(command, env=self.env, text=True, capture_output=True, timeout=15)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("disabled", (result.stdout + result.stderr).lower())
+                self.assertEqual(binary.read_bytes(), b"existing binary fixture")
+                self.assertEqual(sorted(p.name for p in installed.iterdir()), ["reason-network"])
+                self.assertFalse(self.trace.exists())
+
     @unittest.skipUnless(POWERSHELL, "PowerShell unavailable; static coverage is not runtime coverage")
     def test_powershell_installer_rejects_overrides_before_io(self):
         for overrides in ({}, {"REASON_NETWORK_REPO": "reason-machines/reason-network"},
