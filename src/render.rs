@@ -217,9 +217,9 @@ pub fn send_result(r: &SendResult) -> String {
     out
 }
 
-/// Messages framed for an agent's context: clearly peer input, with what it needs to reply. `agent` is the
-/// recipient's agent kind, if known; `cli` when it has no Reason Network tools and replies with the CLI.
-pub fn for_agent(msgs: &[Message], agent: Option<&str>, cli: bool) -> String {
+/// Messages framed for an agent's context: clearly peer input, with what it needs to reply.
+/// `cli` means it has no network tools and replies with the local CLI.
+pub fn for_agent(msgs: &[Message], _agent: Option<&str>, cli: bool) -> String {
     let mut out = String::new();
     for m in msgs {
         let mut attrs = format!("from=\"{}\"", attr(&m.from));
@@ -252,8 +252,8 @@ pub fn for_agent(msgs: &[Message], agent: Option<&str>, cli: bool) -> String {
     } else {
         format!("From {person}'s agent.")
     };
-    // No Reason Network tools (Reason's agent; a Claude session from before Reason Network), but commands run on this computer.
-    let reply = if cli || agent == Some("reason") {
+    // No network tools (e.g. a Claude session from before setup), but commands run on this computer.
+    let reply = if cli {
         format!("Reply if useful: {ENGINE} send {} --from {} \"<reply>\"", last.from, last.to)
     } else {
         format!("Reply if useful with send_message to \"{}\".", last.from)

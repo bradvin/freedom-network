@@ -1,4 +1,4 @@
-//! The guided setup: what `reason network`, `reason network init`, `reason network join`, `reason network invite` and `reason network setup` do when a person
+//! The standalone guided setup: what `reason-network`, `init`, `join`, `invite` and `setup` do when a person
 //! runs them in a terminal. Without a terminal (an agent running them), the commands use defaults and flags.
 
 use crate::{
@@ -48,8 +48,8 @@ fn ask_name() -> Result<String> {
     Ok(util::slug(&name))
 }
 
-/// Start or join a team. With an invite (a team link, from the installer), it only asks for your name.
-/// `start`: `Some(true)` from `reason network init`, `Some(false)` from `reason network join`, `None` to ask.
+/// Start or join a team. With an invite (a locally shared raw ticket), it only asks for your name.
+/// `start`: `Some(true)` from `init`, `Some(false)` from `join`, `None` to ask.
 pub async fn onboard(
     start: Option<bool>,
     team: Option<String>,
@@ -189,7 +189,7 @@ pub async fn agents_and_preferences() -> Result<()> {
     let found = setup::detect(&exe);
     let chosen: Vec<&str> = if found.is_empty() {
         log::warning(format!(
-            "No coding agents found here (Claude Code, Codex, Grok CLI, Cursor, Gemini CLI, Copilot CLI, opencode, pi, DeepSeek Harness, Reason). Install one, then run `{CLI} setup`."
+            "No coding agents found here (Claude Code, Codex, Grok CLI, Cursor, Gemini CLI, Copilot CLI, opencode, pi, DeepSeek Harness). Install one, then run `{CLI} setup`. Reason cloud integration is unsupported."
         ))?;
         Vec::new()
     } else {
@@ -293,7 +293,7 @@ pub fn copy(text: &str) -> bool {
     })
 }
 
-/// `reason network invite` in a terminal: the team link, or a one-time code for another machine of yours.
+/// `reason-network invite` in a terminal: a raw team ticket, or a one-time code for another machine of yours.
 pub async fn invite() -> Result<()> {
     intro(format!(" {CLI} invite "))?;
     let what = select("Who's joining?")
@@ -311,7 +311,7 @@ pub async fn invite() -> Result<()> {
     Ok(())
 }
 
-/// `reason network setup` in a terminal.
+/// `reason-network setup` in a terminal.
 pub async fn setup_agents() -> Result<()> {
     intro(format!(" {CLI} setup "))?;
     agents_and_preferences().await?;

@@ -40,7 +40,7 @@ No particular fork release tag, signed artifact or release readiness is claimed 
 
 The release workflow's dependency/action pins do not prove fork publisher identity or artifact provenance. Its archives and adjacent checksums are not an approved distribution mechanism. Workflow/settings changes, release signing/provenance design and release execution require a later authorized slice.
 
-Reason cloud/workspace bridges, managed-directory detection, default n0 transport services and session/setup integrations remain inherited behavior for P2/P3 or later. P1 prevents this checkout's distribution paths from replacing the fork; it does not establish cloud independence, prevent an external package manager from overwriting a binary, or validate real workers, Windows/WSL or cross-machine relay behavior.
+P1 alone did not establish cloud independence. P2 subsequently removes Reason cloud/workspace CLI bridges, cloud-session setup and managed-directory coupling; see [REASON_INDEPENDENCE.md](REASON_INDEPENDENCE.md). Default n0 transport/discovery remains inherited for P3. An external package manager can still overwrite a binary, and neither slice validates real workers, Windows/WSL or cross-machine/custom-relay behavior.
 
 ## Reproducible checks
 

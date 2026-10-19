@@ -166,7 +166,7 @@ The hard part. Each session advertises a **delivery tier** so senders know when 
 | Codex | push | `codex queue --thread <id>` / app-server `turn/start` (default daemon mode). Mid-turn: `PostToolUse` `additionalContext`. Stop: `decision:block`. Hooks need one-time approval in `/hooks`. |
 | opencode | push | Plugin (one file for 1.x and 2.x): `client.session.promptAsync` (1.x), `ctx.session.prompt` (2.x, where busy/idle come from `session.execution.*` events). |
 | pi | push | Extension (`~/.pi/agent/extensions/reason-network.ts`): registers the MCP server per session (`deferred`, with `REASON_NETWORK_SESSION`), `sendUserMessage` (`deliverAs: "steer"` mid-run, a new turn when idle), busy/idle from `agent_start`/`agent_settled`, the session name as `doing`. |
-| Reason | push | Its agent runs in Reason's cloud: the daemon lists live sessions (`reason session list --json`, when `reason = true`) and sends with `reason session send`. Replies go through the CLI: `reason-network send <to> --from <its address>`. |
+| Reason (removed in P2) | unsupported | Historical cloud-session listing/delivery is removed. `reason = true` is compatibility data only and cannot enable it; see [REASON_INDEPENDENCE.md](REASON_INDEPENDENCE.md). |
 | Amp | push | Plugin: `thread.appendUserMessage(…, {steer:true})`. |
 | Cursor | turn | `postToolUse` `additional_context`; `stop` `followup_message`. Idle: background `reason-network wait`. |
 | Gemini CLI | turn | `AfterTool` `additionalContext`; `AfterAgent` block. Idle: experimental background-shell inject. |

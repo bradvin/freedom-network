@@ -16,8 +16,8 @@ impl Daemon {
     fn hook_tier(&self, agent: &str, push_failed: bool) -> Tier {
         match agent {
             "codex" if !push_failed && agent::find_bin("codex").is_some() => Tier::Push,
-            // Their plugin or extension delivers into idle sessions; Reason's CLI sends into its sessions.
-            "opencode" | "pi" | "reason" => Tier::Push,
+            // Their plugin or extension delivers into idle sessions.
+            "opencode" | "pi" => Tier::Push,
             _ => Tier::Turn,
         }
     }
@@ -73,7 +73,6 @@ impl Daemon {
                     last_hook: None,
                     push_failed: false,
                     transcript: None,
-                    retry: None,
                     stop_gen: 0,
                 },
             );
