@@ -95,13 +95,15 @@ class ReasonIndependence(unittest.TestCase):
         self.trace = self.root / "executed"
         self.processes = []
         self.addCleanup(self.stop_all)
-        # An allowlisted environment and tools-only PATH cannot discover real agents.
+        # PATH alone is not isolation: find_bin also searches absolute install directories.
         self.env = dict(HOME=str(self.root), USERPROFILE=str(self.root), USER="fixture",
                         PATH=str(self.tools), TMPDIR=str(self.root), TRACE=str(self.trace),
                         CLAUDE_CONFIG_DIR=str(self.root / "claude"),
                         CODEX_HOME=str(self.root / "codex"),
                         REASON_NETWORK_NO_PROMPT="1", REASON_NETWORK_NO_TRAY="1",
                         REASON_NETWORK_NO_MDNS="1", REASON_NETWORK_NO_SERVICE="1")
+        for name in ("claude", "codex", "grok", "cursor-agent", "gemini", "copilot", "opencode", "pi", "dsh"):
+            self.env[f"REASON_NETWORK_{name.upper()}_BIN"] = str(self.root / "absent" / name)
 
     def trap_reason(self):
         trap = self.tools / "reason"
@@ -208,6 +210,23 @@ class ReasonIndependence(unittest.TestCase):
         self.assertNotIn("Reason:", result.stdout + result.stderr)
         self.assertNotIn("lists your live Reason sessions", result.stdout + result.stderr)
         self.assert_no_reason()
+
+    def test_setup_binary_overrides_prevent_fallback_agent_execution(self):
+        fallback = self.root / ".local" / "bin" / "claude"
+        fallback.parent.mkdir(parents=True)
+        fallback.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$TRACE"\nexit 73\n')
+        fallback.chmod(0o755)
+        state = self.state("a")
+        command = [str(BINARY), "setup", "--dry-run", "--no-service"]
+        env = self.env | dict(REASON_NETWORK_HOME=str(state))
+        result = subprocess.run(command, env=env, text=True, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assert_no_reason()
+        # Positive control: without the pin, the absolute fallback search executes this harmless fixture.
+        del env["REASON_NETWORK_CLAUDE_BIN"]
+        result = subprocess.run(command, env=env, text=True, capture_output=True, timeout=15)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("mcp get reason-network", self.trace.read_text())
 
     def form_team(self, present):
         if present:

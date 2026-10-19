@@ -42,7 +42,10 @@ python3 tests/reason_independence.py --binary target/debug/reason-network
 The harness reexecutes under `sandbox-exec` with outbound networking denied except local-host IP and Unix
 sockets. Before spawning fixtures it requires external TCP and UDP probes to fail with `EPERM`, rather
 than treating DNS failure, timeout or an unreachable network as isolation evidence. Child environments
-allow only fixture HOME/state, tools-only PATH and disabled tray/service/mDNS. No real agents, services,
+allow only fixture HOME/state, tools-only PATH and disabled tray/service/mDNS. Every local-agent BIN lookup
+is explicitly pinned to an absent fixture path: PATH alone does not prevent global executable fallback.
+A harmless fallback Claude sentinel verifies the pin blocks lookup, with an unpinned positive control proving
+that dry-run setup would otherwise execute the fixture. No real agents, services,
 profile wiring or application installation are used. Temporary child processes and files are cleaned up.
 This guard is test isolation, not a production worker sandbox. Other OS execution is explicitly unsupported
 by this harness, not silently run without a guard.
