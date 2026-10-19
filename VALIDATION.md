@@ -7,6 +7,12 @@ messaging and two-daemon raw-ticket admission pass under macOS outbound denial. 
 does not pass with external discovery and mDNS denied. The optional `--transport` attempt records that failure;
 the default suite explicitly skips it. This does not check off the broader Reason-absent/denied acceptance item below.
 
+P3b's separate optional [B-local harness](OPERATOR_CONNECTIVITY.md) uses a pinned,
+independently verified disposable loopback relay. Its readiness manifest and
+exact-run receipts are required evidence; a missing prerequisite is BLOCKED,
+not a pass. This additional topology does not replace C0 or establish the broader
+operator-owned/cross-NAT, offline-member relay-change or real-worker items below.
+
 ## D0 documentation checks
 
 - [ ] Diff contains only README and planned scope documents; no source, license, workflow or settings changes.
