@@ -1,6 +1,6 @@
 # Validation checklist
 
-All runtime acceptance is pending. Record exact revision, test class, environment, expected/observed result and redacted evidence per future PR. Use pass/fail/blocked/not-run, never infer a pass from static inspection. No machines, sessions, credentials or relay availability are assumed.
+Independent-network and real-worker runtime acceptance is pending. P1's local distribution unit/process checks are separate; reproducible commands and boundaries are in [DISTRIBUTION.md](DISTRIBUTION.md). Record exact revision, test class, environment, expected/observed result and redacted evidence per PR. Use pass/fail/blocked/not-run, never infer a pass from static inspection. No machines, sessions, credentials or relay availability are assumed.
 
 ## D0 documentation checks
 

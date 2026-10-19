@@ -71,8 +71,8 @@ pub async fn run(service: bool) -> Result<()> {
         tokio::spawn(daemon.clone().relay_loop());
     }
     tokio::spawn(crate::migrate::run(log));
-    if update::allowed(daemon.cfg.auto_update) {
-        tokio::spawn(daemon.clone().update_loop());
+    if let Err(e) = update::configure(daemon.cfg.auto_update) {
+        log(&e.to_string());
     }
     loop {
         let stream = listener.accept().await?;

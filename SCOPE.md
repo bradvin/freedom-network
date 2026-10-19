@@ -1,6 +1,6 @@
 # Freedom Network scope
 
-Status: proposal and phased backlog only. No fork runtime acceptance has been established.
+Status: phased backlog; P1 distribution-safety implementation is described in [DISTRIBUTION.md](DISTRIBUTION.md). No independent-network or real-worker runtime acceptance has been established.
 This document governs the fork's planned changes; [DESIGN.md](DESIGN.md) describes inherited behavior, not proof of these goals.
 
 ## Evidence and purpose
@@ -22,7 +22,7 @@ Do not run the inherited installation commands or treat this fork as a safe dist
 
 The first implementation PR must neutralize upstream binary replacement and hosted installer handoffs before other implementation or installation trials. Audit explicit and automatic updates, generated join/install commands, shell and PowerShell installers, migration paths, UI/help/skill links, package metadata, defaults and release artifact/script provenance. Disable unattended replacement by default; unsupported or absent fork releases must fail closed without upstream fallback. Document a deliberate, reviewed fork update policy and version/publisher verification. Review the tag/manual release workflow as an artifact-distribution hazard, without triggering or changing Actions, repository settings or publishing a release in this scope.
 
-This documentation does not remove the hazard; inherited README instructions remain historical context below its fork warning.
+P1 retires this checkout's scripted installation and self-upgrade paths and removes the README's inherited installer instructions; see [DISTRIBUTION.md](DISTRIBUTION.md). This does not change installed upstream binaries or external install managers, approve binary releases, or establish runtime independence.
 
 ## Independence means three different things
 

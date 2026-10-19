@@ -2,9 +2,9 @@
 name = "reason-network"
 version = "0.10.7"
 edition = "2024"
-description = "Reason Network: the team directory and message bus behind reason network, for coding agents across machines"
+description = "Freedom Network: an independent fork of Reason Network for coding agents across machines"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/reason-machines/reason-network"
+repository = "https://github.com/bradvin/freedom-network"
 publish = false
 
 [[bin]]

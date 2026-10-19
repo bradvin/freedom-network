@@ -27,17 +27,11 @@ use client::Link;
 use proto::*;
 use std::{io::Read, time::Duration};
 
-/// Reason Network's page; team links point at its join page.
-pub const SITE_URL: &str = "https://reasonmachines.com/network";
-
 /// The name agents know this by: their MCP server, plugin and extension files, hook names.
 pub const AGENT_NAME: &str = "reason-network";
 /// The name this engine used before it was Reason Network: `setup` takes out what this binary wired in under it, and
 /// `paths` moves the state it kept under it.
 pub const LEGACY_NAME: &str = "tincan";
-
-/// Where releases are published: a standalone install and its updates come from here.
-pub const REPO: &str = "reason-machines/reason-network";
 
 /// Whether the Reason CLI installed this binary (in `~/.reason/bin`): then it sets up and updates with the CLI, and
 /// people type `reason network`.
@@ -49,12 +43,12 @@ pub fn managed() -> bool {
     })
 }
 
-/// The command people type, for messages (`{CLI}`): `reason network` with the Reason CLI, `reason-network` on its own.
+/// The local fork command, never a handoff to the upstream Reason CLI.
 pub struct Command;
 pub const CLI: Command = Command;
 impl std::fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(if managed() { "reason network" } else { AGENT_NAME })
+        f.write_str(AGENT_NAME)
     }
 }
 
@@ -71,18 +65,22 @@ impl std::fmt::Display for Engine {
     }
 }
 
-/// The one line that installs Reason Network on its own (no account needed) and runs `reason-network <args>`: for
-/// macOS and Linux, and for Windows.
+/// Join using an already installed, reviewed binary. Never generate a remote installer handoff.
+/// The invitation is data, not a shell fragment; quote it for POSIX shell and PowerShell respectively.
 pub fn install_lines(args: &str) -> [String; 2] {
-    let base = format!("https://github.com/{REPO}/releases/latest/download");
     [
-        format!("curl -fsSL {base}/install.sh | sh -s -- {args}"),
-        format!("powershell -c \"& ([scriptblock]::Create((irm {base}/install.ps1))) {args}\""),
+        format!("{AGENT_NAME} join '{}'", args.replace('\'', "'\\''")),
+        format!("{AGENT_NAME} join '{}'", args.replace('\'', "''")),
     ]
 }
 
 #[cfg(test)]
 mod distribution_tests {
+    #[test]
+    fn invitations_do_not_route_users_to_a_hosted_installer_page() {
+        assert_eq!(super::join_url("tincan1fixture"), "tincan1fixture");
+    }
+
     #[test]
     fn generated_commands_use_only_an_existing_local_binary() {
         let [unix, windows] = super::install_lines("fixture-code");
@@ -96,26 +94,25 @@ mod distribution_tests {
         assert_eq!(unix, "reason-network join 'code'\\''; echo injected; '\\'''");
         assert_eq!(windows, "reason-network join 'code''; echo injected; '''");
     }
-}
 
-/// The install script, run without questions, installing into `dir`.
-pub fn installer(dir: &std::path::Path) -> std::process::Command {
-    let base = format!("https://github.com/{REPO}/releases/latest/download");
-    let mut cmd;
-    if cfg!(windows) {
-        cmd = std::process::Command::new("powershell");
-        cmd.args(["-NoProfile", "-NonInteractive", "-Command", &format!("irm {base}/install.ps1 | iex")]);
-    } else {
-        cmd = std::process::Command::new("sh");
-        cmd.arg("-c").arg(format!("s=\"$(curl -fsSL {base}/install.sh)\" && printf '%s\\n' \"$s\" | sh"));
+    #[cfg(unix)]
+    #[test]
+    fn generated_unix_command_parses_as_local_join_with_literal_data() {
+        let data = "code'; echo injected; $(echo injected); `echo injected`; '\nsecond line";
+        let [unix, _] = super::install_lines(data);
+        let out = std::process::Command::new("/bin/sh")
+            .arg("-c")
+            .arg(format!("set -- {unix}; printf '%s\\n' \"$@\""))
+            .output()
+            .unwrap();
+        assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+        assert_eq!(String::from_utf8(out.stdout).unwrap(), format!("reason-network\njoin\n{data}\n"));
     }
-    cmd.env("REASON_NETWORK_BIN_DIR", dir).env("REASON_NETWORK_NO_PROMPT", "1");
-    cmd
 }
 
-/// The team link: Reason Network's join page, carrying the `ticket`.
+/// A shareable raw ticket, not an upstream hosted page that may offer an installer.
 pub fn join_url(ticket: &str) -> String {
-    format!("{SITE_URL}/join/#{ticket}")
+    ticket.to_string()
 }
 
 #[derive(Parser)]
@@ -247,7 +244,7 @@ enum Cmd {
     },
     /// Check that everything is working
     Doctor,
-    /// Update to the latest release (with the Reason CLI, `reason update` does it)
+    /// Disabled: this fork does not perform binary self-upgrades
     Upgrade,
     /// Called by agents' hooks
     #[command(hide = true)]
@@ -288,8 +285,11 @@ enum Cmd {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    migrate::as_ours();
     let cmd = Cli::parse().cmd;
+    if matches!(cmd, Some(Cmd::Upgrade)) {
+        return cli(Cmd::Upgrade).await;
+    }
+    migrate::as_ours();
     paths::migrate();
     match cmd {
         Some(Cmd::Daemon { service }) => daemon::run(service).await,
@@ -353,6 +353,10 @@ async fn cli(cmd: Cmd) -> Result<()> {
     unsafe {
         libc::signal(libc::SIGPIPE, libc::SIG_DFL)
     };
+    // Fail before any daemon connection, state migration or installer selection, including managed installs.
+    if matches!(cmd, Cmd::Upgrade) {
+        bail!("binary self-upgrade is disabled in this fork; use a reviewed source revision (see DISTRIBUTION.md)");
+    }
     let link = Link::new(None);
     match cmd {
         Cmd::Who { filter, all, json } => {
@@ -426,10 +430,9 @@ async fn cli(cmd: Cmd) -> Result<()> {
             let l: LinkInfo = link.call(Request::Link { new }).await?;
             let copied = wizard::interactive() && wizard::copy(&l.url);
             println!("Team link for {}{}:\n\n{}\n", l.team, if copied { " (on your clipboard)" } else { "" }, l.url);
-            println!("Anyone with it can join: it opens a page with one command. `{CLI} link --new` replaces it.");
-            if managed() {
-                println!("Teammates in your Reason workspace just run `reason network`; the link is for anyone else.");
-            }
+            println!(
+                "Anyone with it can join using an existing reviewed build: `{CLI} join '<ticket>'`. `{CLI} link --new` replaces it. Scripted installation is disabled."
+            );
         }
         Cmd::Invite { me: false, code: false, .. } => Box::pin(cli(Cmd::Link { new: false })).await?,
         Cmd::Setup { dry_run: false, remove: false, no_service: false } if wizard::interactive() => {
@@ -477,16 +480,12 @@ async fn cli(cmd: Cmd) -> Result<()> {
             let who = if me { "another machine of yours" } else { "a teammate" };
             println!("Invite code for {who}: {}\n", i.code);
             let [unix, windows] = install_lines(&i.code);
-            if managed() && !me {
-                println!("Teammates in your Reason workspace just run `reason network`. Anyone else:\n");
-            }
-            println!("They run this, which installs Reason Network (no account needed) and joins the team:\n");
+            println!(
+                "With a reviewed source build already available, they join using the local binary (scripted installation is disabled):\n"
+            );
             println!("  {unix}\n");
             println!("On Windows, in PowerShell:\n\n  {windows}\n");
-            println!(
-                "(or `{AGENT_NAME} join {}` if it's installed). Works once, within {}h, while this machine is online.",
-                i.code, i.hours
-            );
+            println!("Works once, within {}h, while this machine is online.", i.hours);
             println!("If this machine will be offline, use the long form instead: {AGENT_NAME} join {}", i.ticket);
             if me {
                 println!(
@@ -552,22 +551,7 @@ async fn cli(cmd: Cmd) -> Result<()> {
         }
         Cmd::Setup { dry_run, remove, no_service } => setup::run(dry_run, remove, no_service).await?,
         Cmd::Doctor => setup::doctor().await?,
-        Cmd::Upgrade => {
-            if managed() {
-                bail!("the network engine updates with the reason CLI: update reason, then run `{CLI} setup`");
-            }
-            let dir = util::current_exe()?.parent().map(|d| d.to_path_buf()).unwrap_or_default();
-            let exe = dir.join(format!("{AGENT_NAME}{}", std::env::consts::EXE_SUFFIX));
-            let waiting = migrate::waiting(&exe);
-            if !installer(&dir).status()?.success() {
-                bail!("upgrade failed");
-            }
-            if waiting {
-                migrate::keep_waiting_copy(&exe);
-            }
-            stop_daemon().await;
-            println!("The daemon restarted on the new version. Restart agent sessions to update their tools.");
-        }
+        Cmd::Upgrade => unreachable!("rejected before daemon access"),
         Cmd::Stop => {
             if !stop_daemon().await {
                 println!("The daemon is not running.");

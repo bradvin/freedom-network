@@ -89,6 +89,43 @@ class DistributionSafety(unittest.TestCase):
             with self.subTest(overrides=overrides):
                 self.assert_blocked([str(BINARY), "upgrade"], overrides)
 
+    @unittest.skipUnless(BINARY, "pass --binary for legacy/managed path coverage")
+    def test_upgrade_cannot_handoff_under_a_legacy_or_managed_name(self):
+        assert BINARY is not None
+        legacy = self.home / ".tincan"
+        legacy.mkdir()
+        marker = legacy / "tincan.db"
+        marker.write_bytes(b"fixture state must not migrate")
+        managed_dir = self.home / ".reason" / "bin"
+        managed_dir.mkdir(parents=True)
+        for target in (self.tools / "tincan", managed_dir / "reason-network"):
+            shutil.copyfile(BINARY, target)
+            target.chmod(0o755)
+            self.assert_blocked([str(target), "upgrade"])
+            self.assertEqual(marker.read_bytes(), b"fixture state must not migrate")
+
+    @unittest.skipUnless(BINARY, "pass --binary for isolated daemon policy coverage")
+    def test_daemon_refuses_old_update_opt_in_without_launching_updater(self):
+        state = self.home / "state"
+        state.mkdir()
+        # No team, tray, local service, agent integration or transport is started.
+        (state / "config.toml").write_text("auto_update = true\ntray = false\nreason = false\nlan = false\n")
+        process = subprocess.Popen([str(BINARY), "daemon"], env=self.env,
+                                   text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        try:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                process.communicate(timeout=2)
+        finally:
+            process.terminate()
+            try:
+                stdout, stderr = process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                stdout, stderr = process.communicate(timeout=5)
+        self.assertIn("auto_update is disabled", stderr, stdout + stderr)
+        self.assertFalse(self.trace.exists(), self.trace.read_text() if self.trace.exists() else "")
+        self.assertFalse((self.home / "installed").exists())
+
     def test_no_runtime_download_scripts_or_updater_survive(self):
         for relative in ("src/main.rs", "src/daemon/update.rs", "src/migrate.rs"):
             text = (ROOT / relative).read_text()
