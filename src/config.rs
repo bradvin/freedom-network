@@ -18,7 +18,7 @@ pub struct Config {
     pub tray: bool,
     /// List your live Reason sessions and deliver to them (`reason session list`/`send`).
     pub reason: bool,
-    /// Install new releases when they come out (the daemon checks every few hours).
+    /// Legacy setting, retained for config compatibility. Self-updating is disabled even when true.
     pub auto_update: bool,
     pub inbound: Inbound,
 }
@@ -50,7 +50,7 @@ impl Default for Config {
             lan: true,
             tray: true,
             reason: false,
-            auto_update: true,
+            auto_update: false,
             inbound: Inbound::default(),
         }
     }
@@ -104,5 +104,17 @@ impl Config {
 
     pub fn tray(&self) -> bool {
         cfg!(target_os = "macos") && self.tray && crate::paths::env_var_os("NO_TRAY").is_none()
+    }
+}
+
+#[cfg(test)]
+mod distribution_tests {
+    use super::Config;
+
+    #[test]
+    fn unattended_updates_default_off_including_old_configs() {
+        assert!(!Config::default().auto_update);
+        assert!(!toml::from_str::<Config>("").unwrap().auto_update);
+        assert!(!toml::from_str::<Config>("person = 'fixture'").unwrap().auto_update);
     }
 }

@@ -1,133 +1,83 @@
-# Reason Network
+# Freedom Network
 
-> Fork status: documentation-first planning only; no new runtime capability is verified.
-> See the [Freedom Network scope](SCOPE.md), [trust boundaries](TRUST.md),
-> [ordered PR backlog](IMPLEMENTATION.md) and [validation checklist](VALIDATION.md).
-> The inherited installation/update instructions below target upstream and can replace
-> a fork binary. Do not use them as fork setup instructions. Distribution hazard removal
-> is the first implementation gate; it has not happened yet.
+An independent fork of Reason Network: a team directory and message bus for coding agents across machines.
+
+> Development fork, not a released distribution. Scripted installation and binary self-upgrade are disabled.
+> Read [distribution safety](DISTRIBUTION.md), [scope](SCOPE.md), [trust boundaries](TRUST.md),
+> [ordered backlog](IMPLEMENTATION.md) and [validation checklist](VALIDATION.md).
+> No cloud independence, trusted orchestration or real-worker acceptance is claimed by P1.
 
 ![Make your bots talk to your Claude Code and Codex.](assets/reason-network-banner.png)
 
-Your agents, talking to your **teammates'** agents.
+## Development and distribution
 
-One small daemon per computer. Peer to peer, no server. Messages land straight in the session that's open.
+Use a reviewed source revision from `bradvin/freedom-network`, not an upstream release or installer.
+Build locally with `cargo build --locked`; this does not install a service or change agent configuration.
+`install.sh`, `install.ps1` and `reason-network upgrade` fail closed. Environment repository, mirror and
+version overrides cannot enable them. `auto_update` defaults off, and an inherited explicit `true` cannot
+enable self-replacement. There is no approved binary publisher/version policy yet; see [DISTRIBUTION.md](DISTRIBUTION.md).
 
-Every coding agent session on every teammate's computer shows up (who, which repo and branch, busy or idle, what it's
-doing right now), and any of them can message the right one: Claude Code, Codex, Cursor, Gemini CLI, Copilot CLI,
-Grok CLI, opencode, pi, DeepSeek Harness and Reason.
+The inherited executable/package name `reason-network`, version `0.10.7`, ticket identifiers and local state paths
+are intentionally retained. The version alone is not fork identity; use the source repository and exact reviewed commit.
+Previously installed upstream binaries and external install managers are not changed by this checkout.
 
-## Get started
-
-```sh
-curl -fsSL https://github.com/reason-machines/reason-network/releases/latest/download/install.sh | sh
-```
-
-First it asks: sign in with Reason, or not.
-
-- **With Reason** (the default): your Reason workspace is the team, nobody passes links around, and your agents can
-  reach Reason's cloud agents too. The [Reason CLI](https://reasonmachines.com) installs and runs it; from then on
-  it's `reason network`.
-- **Without an account**: it installs just this engine, asks your name and a team name, and gives you a team link
-  (on your clipboard). Teammates open it, paste one command, type their name, and they're in. Or they tell their
-  agent "join my Reason Network team: <link>". On Windows, in PowerShell:
-  `irm https://github.com/reason-machines/reason-network/releases/latest/download/install.ps1 | iex`
-
-That's it. Ask any agent "who's on the team?", or tell it to ask someone's agent something.
-
-**Coming from tincan?** Nothing to do: tincan's last update moves each machine over (team, agents, background
-service). The command is now `reason-network` (on macOS and Linux `tincan` keeps working), and Codex asks once to
-trust the new hooks.
-
-## What you get
-
-- **Every agent on the team.** Agents get three tools, `list_team`, `send_message` and `ask_user`, plus
-  `check_inbox` where messages can't be pushed, under the MCP server `reason-network`. They never have to report
-  anything: what a session is doing comes from its own title and todo list.
-- **Messages land right away.** Claude Code, Codex, opencode, pi and Reason get them mid-session, and idle ones wake
-  up; Cursor, Gemini, Copilot and Grok at their next step; DeepSeek Harness when it checks its inbox (every tool
-  result says if mail is waiting). Claude sessions you already had open join without a restart.
-- **Your sign-off, even when you're away from your agent.** When a teammate's agent asks yours for something only you
-  can OK, your agent asks you with a pop-up (`ask_user`): Approve or Deny, with a note. The answer goes straight back
-  to your agent as yours, not as a message anyone could send. With `notify`, a message also pops up on the person's
-  screen as a heads-up. (On macOS notifications come from Script Editor: allow them once in System Settings.)
-- **A menu bar icon** on macOS shows who's online and what they're doing.
-- **No setup to maintain.** It runs in the background and stays up to date (on its own, or with the Reason CLI), and
-  the link keeps working.
+With a reviewed build already available and separate local setup authorization, the existing CLI supports:
 
 ```sh
-reason-network who                                             # who's around and what their sessions are doing
-reason-network send alice/api-claude "did the token format change?"   # message one of alice's agents
-reason-network send alice/api-claude --notify "approve the deploy?"   # and pop it up on alice's screen
-reason-network send '*' "deploying api at 5"   # everyone (or alice/*, repo:api): from you, never an agent
-reason-network listen --as terminal                            # replies to what you sent from this terminal
-reason-network link                                            # the team link again
-reason-network setup                                           # which agents are on it, and how messages are handled
+reason-network init '<team>' --as <name> --no-setup
+reason-network join '<ticket>' --as <name> --no-setup
+reason-network who
+reason-network send alice/api-claude "did the token format change?"
+reason-network listen --as terminal
+reason-network link
 ```
 
-With the Reason CLI, `reason network who` and `reason network send` work too, and
-`reason network alice/api-claude "…"` asks and waits for the answer.
+Generated invitations now carry raw tickets/local join commands, not a hosted installer page. Do not follow an
+old hosted link's install instructions. Ordinary peer messages are untrusted input, not privileged task commands;
+delivery does not prove execution or completion. Do not change installed agent configs or run `setup` without authorization.
 
-## How it works
+## Inherited functionality and limits
 
-Each computer runs a small daemon. Teammates' computers connect directly (on the same Wi-Fi, or across the internet
-with [iroh](https://iroh.computer)); if that fails, traffic goes through a relay that only sees encrypted bytes.
-That's one of n0's (the company behind iroh) unless your team runs its own (`reason-network relay <url>`): then your
-computers never contact n0 at all. Only team members can connect, and a computer can only speak for its own person.
-Messages to someone offline wait and go out when they're back.
+The inherited code connects local agent sessions through per-machine daemons and iroh peer transport, with directory,
+messaging, notifications and local agent integrations. [DESIGN.md](DESIGN.md) describes that inherited design, not verified
+fork acceptance. Managed-directory detection and Reason cloud/workspace bridges remain for later work; no account-free
+or cloud-independent runtime acceptance is established by this distribution-safety change.
 
-Teammates see your name, your computers, and what your agent sessions are working on (repo, branch, busy or idle).
-State lives in `~/.reason/network`. Details: [DESIGN.md](DESIGN.md).
+Default connectivity still uses n0 services. Custom relay support exists in the source, but no no-n0/cross-machine
+runtime claim is made here. LAN/offline, independent relay, Windows/WSL and real Codex/Claude/Hermes acceptance are separate
+mandatory gates. State paths remain `~/.reason/network` (or the explicit compatibility environment overrides).
 
-## For AI agents
+The future generic orchestrator/task protocol and Hermes adapter are planned, not implemented; local permissions remain
+authoritative. No remote agent launching, sandbox, exactly-once effects or automatic uncertain-task replay is promised.
 
-If your user gave you a Reason Network team link (`https://…/network/join/#tincan1…`) and wants to join: ask them
-what name teammates should see, then run this with the whole link, exactly as given (first check it ends in `#tincan1`
-followed only by letters, digits, `-` and `_`). It asks no questions and needs no account:
+## Checks
 
 ```sh
-curl -fsSL https://github.com/reason-machines/reason-network/releases/latest/download/install.sh | sh -s -- '<the whole link>' --as <name>
+cargo fmt --check
+cargo clippy --all-targets --locked -- -D warnings
+cargo test --locked
+cargo build --locked
+python3 tests/distribution_safety.py --binary target/debug/reason-network
 ```
 
-On Windows (from any shell):
+The distribution fixture harness never downloads or installs application binaries. A separately available PowerShell
+runtime can be supplied with `--powershell /path/to/pwsh`; otherwise its runtime check is explicitly skipped. This does not
+establish native Windows acceptance. Existing `tests/e2e` scripts can exercise networking, hooks or setup; inspect side
+effects and obtain environment authorization before running them, rather than treating them as safe unit checks.
 
-```sh
-powershell -c "& ([scriptblock]::Create((irm https://github.com/reason-machines/reason-network/releases/latest/download/install.ps1))) '<the whole link>' --as <name>"
-```
+## Release safety
 
-To start a team instead, give it `init '<team>' --as <name>` in place of the link, then `reason-network link` prints
-the link for teammates. It installs the `reason-network` binary from this repo's GitHub release (checksum verified)
-into `~/.local/bin`, adds it to the coding agents on the machine (an MCP server and hooks), and starts a background
-service. `reason-network who` shows the team. Agents without its tools, like cloud agents, can follow
-[the skill](src/skill.md).
-
-## Uninstall
-
-```sh
-reason-network leave && reason-network setup --remove && rm -rf ~/.reason/network ~/.local/bin/reason-network
-rm -f ~/.local/bin/tincan   # if you came from tincan
-```
-
-On Windows, in PowerShell: `reason-network leave; reason-network setup --remove; Remove-Item -Recurse -Force ~\.reason\network, ~\.local\bin\reason-network*`
-
-With the Reason CLI: `reason network leave`, then `reason network setup --remove`.
-
-## Build
-
-```sh
-cargo fmt && cargo clippy --all-targets -- -D warnings && cargo test
-cargo build && python3 tests/e2e/two_machines.py   # two machines over iroh (needs internet)
-python3 tests/e2e/hooks.py && python3 tests/e2e/guided.py
-```
-
-A `v*` tag builds the macOS, Linux and Windows archives and the install scripts; the Reason CLI pins the macOS and
-Linux ones.
+The inherited [release workflow](.github/workflows/release.yml) is unchanged. A `v*` tag or manual dispatch can publish
+archives/scripts with `contents: write`; packaging and adjacent checksums do not establish an approved fork publisher.
+Do not create release tags, dispatch workflows, publish, install or deploy under this slice. See the
+[inventory and deferred hazards](DISTRIBUTION.md#inventory-and-deferred-hazards) before any distribution work.
 
 ## Contributing
 
-Issues and pull requests are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
+Use the [implementation backlog](IMPLEMENTATION.md) and focused pull requests against this fork. See also the inherited
+[contribution guide](CONTRIBUTING.md). Required validation gaps must stay explicit, not be inferred from passing CI.
 
 ## License
 
 MIT OR Apache-2.0 (LICENSE-MIT, LICENSE-APACHE); see [NOTICE](NOTICE). Originally tincan, by Lars Talian, who works
-at Reason.
+at Reason. Original licenses and attribution are retained.

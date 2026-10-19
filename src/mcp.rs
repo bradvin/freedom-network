@@ -351,16 +351,14 @@ fn failure(e: anyhow::Error) -> CallToolResult {
     CallToolResult::error(vec![ContentBlock::text(format!("{e:#}"))])
 }
 
-/// Getting this machine into a team: the Reason CLI does it, or a team link with this binary's own path.
+/// Join with this existing local binary; never delegate to the upstream CLI or an installer.
 fn join_hint() -> String {
-    if crate::managed() {
-        return "This machine isn't on a Reason Network yet: ask your user to run `reason network`.".into();
-    }
     let exe = crate::setup::exe()
         .map_or_else(|_| crate::AGENT_NAME.into(), |p| crate::setup::shell_cmd(&p, "").trim_end().to_string());
     format!(
         "This machine isn't in a team yet. Ask your user for the team link and the name teammates should see, then run \
-         `{exe} join '<link>' --as <name>`; to start a team instead, `{exe} init <team> --as <name>`."
+         `{exe} join '<link>' --as <name>`; to start a team instead, `{exe} init <team> --as <name>`. \
+         Scripted installation and binary self-upgrade are disabled in this fork."
     )
 }
 

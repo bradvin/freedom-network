@@ -2,7 +2,7 @@
 //! runs them in a terminal. Without a terminal (an agent running them), the commands use defaults and flags.
 
 use crate::{
-    AGENT_NAME, CLI,
+    CLI,
     client::Link,
     config::{Config, Policy},
     install_lines, invite,
@@ -95,7 +95,7 @@ pub async fn onboard(
             let text: String = match invite.take() {
                 Some(t) => t,
                 None => input("Paste the team link")
-                    .placeholder("https://reasonmachines.com/network/join/#…")
+                    .placeholder("tincan1… (raw ticket from a reviewed build)")
                     .validate(|s: &String| invite_ok(s))
                     .interact()?,
             };
@@ -249,12 +249,9 @@ pub async fn show_link(new: bool) -> Result<String> {
     note(
         title,
         format!(
-            "Send it to your friends: one paste and their name, and they're in.\nIt works for everyone until `{CLI} link --new`."
+            "Share this raw ticket; teammates use an existing reviewed build: `{CLI} join '<ticket>'`.\nScripted installation is disabled. It works for everyone until `{CLI} link --new`."
         ),
     )?;
-    if crate::managed() {
-        log::info("Teammates in your Reason workspace just run `reason network`; the link is for anyone else.")?;
-    }
     Ok(l.url)
 }
 
@@ -266,8 +263,8 @@ pub async fn show_code(me: bool) -> Result<()> {
     note(
         format!("Invite code: {}", i.code),
         format!(
-            "On {who}: {unix}\n(on Windows: {windows})\n(or `{AGENT_NAME} join {}` if it's there already)\nWorks once, within {}h, while this machine is online.",
-            i.code, i.hours
+            "With a reviewed source build already available on {who}:\n{unix}\n(in PowerShell: {windows})\nScripted installation is disabled in this fork.\nWorks once, within {}h, while this machine is online.",
+            i.hours
         ),
     )?;
     Ok(())

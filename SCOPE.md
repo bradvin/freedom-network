@@ -1,12 +1,12 @@
 # Freedom Network scope
 
-Status: proposal and phased backlog only. No fork runtime acceptance has been established.
+Status: phased backlog; P1 distribution-safety implementation is described in [DISTRIBUTION.md](DISTRIBUTION.md). No independent-network or real-worker runtime acceptance has been established.
 This document governs the fork's planned changes; [DESIGN.md](DESIGN.md) describes inherited behavior, not proof of these goals.
 
 ## Evidence and purpose
 
 Baseline: fork `bradvin/freedom-network` main at `19b1fbf72430fd9d554f3db70da55f5659d5c402` (package 0.10.7).
-Static inspection, not a running prototype, establishes:
+Static inspection of that baseline (before P1), not a running prototype, established:
 
 - [src/net.rs](src/net.rs) has iroh peer transport, default n0 services and a custom-relay path using the minimal preset.
 - [src/daemon/reason.rs](src/daemon/reason.rs) bridges Reason cloud sessions; [install.sh](install.sh) offers hosted onboarding.
@@ -18,11 +18,11 @@ Goal: an independently operable agent-team network, usable by a generic trusted 
 
 ## Critical first gate: distribution safety
 
-Do not run the inherited installation commands or treat this fork as a safe distribution yet. The daemon can replace a standalone binary using upstream installation scripts; changing only a download environment variable or README would not fix the compiled update source. Checksums fetched beside an archive establish consistency, not independent publisher authenticity.
+Do not run the inherited installation commands or treat this fork as a safe distribution yet. At baseline, the daemon could replace a standalone binary using upstream installation scripts; changing only a download environment variable or README would not fix the compiled update source. Checksums fetched beside an archive establish consistency, not independent publisher authenticity.
 
 The first implementation PR must neutralize upstream binary replacement and hosted installer handoffs before other implementation or installation trials. Audit explicit and automatic updates, generated join/install commands, shell and PowerShell installers, migration paths, UI/help/skill links, package metadata, defaults and release artifact/script provenance. Disable unattended replacement by default; unsupported or absent fork releases must fail closed without upstream fallback. Document a deliberate, reviewed fork update policy and version/publisher verification. Review the tag/manual release workflow as an artifact-distribution hazard, without triggering or changing Actions, repository settings or publishing a release in this scope.
 
-This documentation does not remove the hazard; inherited README instructions remain historical context below its fork warning.
+P1 retires this checkout's scripted installation and self-upgrade paths and removes the README's inherited installer instructions; see [DISTRIBUTION.md](DISTRIBUTION.md). This does not change installed upstream binaries or external install managers, approve binary releases, or establish runtime independence.
 
 ## Independence means three different things
 
