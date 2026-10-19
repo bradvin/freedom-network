@@ -62,6 +62,18 @@ impl Default for Inbound {
     }
 }
 
+#[cfg(test)]
+mod distribution_tests {
+    use super::Config;
+
+    #[test]
+    fn unattended_updates_default_off_including_old_configs() {
+        assert!(!Config::default().auto_update);
+        assert!(!toml::from_str::<Config>("").unwrap().auto_update);
+        assert!(!toml::from_str::<Config>("person = 'fixture'").unwrap().auto_update);
+    }
+}
+
 impl Config {
     pub fn load() -> Self {
         Self::load_strict().unwrap_or_else(|e| {

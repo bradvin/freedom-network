@@ -81,6 +81,23 @@ pub fn install_lines(args: &str) -> [String; 2] {
     ]
 }
 
+#[cfg(test)]
+mod distribution_tests {
+    #[test]
+    fn generated_commands_use_only_an_existing_local_binary() {
+        let [unix, windows] = super::install_lines("fixture-code");
+        assert_eq!(unix, "reason-network join 'fixture-code'");
+        assert_eq!(windows, "reason-network join 'fixture-code'");
+    }
+
+    #[test]
+    fn generated_arguments_remain_data_in_both_shells() {
+        let [unix, windows] = super::install_lines("code'; echo injected; '");
+        assert_eq!(unix, "reason-network join 'code'\\''; echo injected; '\\'''");
+        assert_eq!(windows, "reason-network join 'code''; echo injected; '''");
+    }
+}
+
 /// The install script, run without questions, installing into `dir`.
 pub fn installer(dir: &std::path::Path) -> std::process::Command {
     let base = format!("https://github.com/{REPO}/releases/latest/download");
